@@ -1,5 +1,5 @@
 from path_planner import a_star, load_map
-from motor_driver import forward, backward, left, right, stop, distance
+from motor_driver import forward, backward, left, right, stop, distance, distanceL, distanceR
 import time
 
 # === SETTINGS ===
@@ -55,9 +55,13 @@ try:
         print(f"Next: {next_step}")
 
         dist = distance()
+        distl=distanceL()
+        distr=distanceR()
+        
         print(f"Sensor Distance: {dist:.2f} cm")
 
-        if dist < DIST_THRESHOLD:
+        if dist < DIST_THRESHOLD or distr<DIST_THRESHOLD or distl<DIST_THRESHOLD:
+            
             print("Obstacle ahead! Replanning...")
 
             # Estimate obstacle cell
