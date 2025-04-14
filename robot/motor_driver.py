@@ -11,13 +11,21 @@ motor_B_forward = 24 # Input 3 for Motor B
 motor_B_backward = 25 # Input 4 for Motor B
 
 # Ultrasonic Sensor Pins (adjust to your wiring)
-TRIG= 5
-ECHO = 6
+TRIG= 6
+ECHO = 5
+
+TRIGL= 10
+ECHOL=9
+
+TRIGR=26
+ECHOR=16
+
+
 
 
 
 # Constants
-SPEED = 50  # Motor speed (0-100)
+SPEED = 30  # Motor speed (0-100)
 DISTANCE_THRESHOLD = 20  # Distance in cm to trigger obstacle avoidance
 
 # Setup GPIO
@@ -35,6 +43,12 @@ GPIO.setup(motor_B_backward, GPIO.OUT)
 # Ultrasonic Sensor Setup
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
+
+GPIO.setup(TRIGL, GPIO.OUT)
+GPIO.setup(ECHOL, GPIO.IN)
+
+GPIO.setup(TRIGR, GPIO.OUT)
+GPIO.setup(ECHOR, GPIO.IN)
 
 # PWM Setup for Motor Speed Control
 pwm_A = GPIO.PWM(motor_A_enable, 100)  # 100Hz frequency
@@ -96,34 +110,41 @@ def distance():
     dist = (time_elapsed * 34300) / 2
     return dist
 
-try:
-    while True:
-        dist = distance()
-        print(f"Distance: {dist:.2f} cm")
+def distanceL():
+    GPIO.output(TRIGL, True)
+    time.sleep(0.00001)
+    GPIO.output(TRIGL, False)
 
-        if dist < DISTANCE_THRESHOLD:
-            print("Obstacle detected!")
-            stop()
-            backward()
-            time.sleep(1)
-            stop()
-            direction = input("Turn Left (L) or Right (R)? ").upper()
-            if direction == 'L':
-                left()
-                time.sleep(1)
-                stop()
-            elif direction == 'R':
-                right()
-                time.sleep(1)
-                stop()
-            else:
-                print("Invalid input. Going straight")
-            forward()
-        else:
-            forward()
-        time.sleep(0.1)
+    start_time = time.time()
+    stop_time = time.time()
 
-except KeyboardInterrupt:
-    print("Stopping...")
-    stop()
-    GPIO.cleanup()  
+    while GPIO.input(ECHOL) == 0:
+        start_time = time.time()
+
+    while GPIO.input(ECHOL) == 1:
+        stop_time = time.time()
+
+    time_elapsed = stop_time - start_time
+    dist = (time_elapsed * 34300) / 2
+    
+    return dist
+    
+def distanceR():
+    GPIO.output(TRIGR, True)
+    time.sleep(0.00001)
+    GPIO.output(TRIGR, False)
+
+    start_time = time.time()
+    stop_time = time.time()
+
+    while GPIO.input(ECHOR) == 0:
+        start_time = time.time()
+
+    while GPIO.input(ECHOR) == 1:
+        stop_time = time.time()
+
+    time_elapsed = stop_time - start_time
+    dist = (time_elapsed * 34300) / 2
+    
+    return dist
+    

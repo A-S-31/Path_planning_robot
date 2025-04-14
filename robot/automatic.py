@@ -25,7 +25,7 @@ ECHOR=16
 
 
 # Constants
-SPEED = 50  # Motor speed (0-100)
+SPEED = 30  # Motor speed (0-100)
 DISTANCE_THRESHOLD = 20  # Distance in cm to trigger obstacle avoidance
 
 # Setup GPIO
