@@ -3,10 +3,12 @@ from motor_driver import forward, backward, left, right, stop, distance, distanc
 import time
 
 # === SETTINGS ===
-CELL_SIZE_CM = 20                # Each grid cell = 20cm x 20cm
+CELL_SIZE_CM = 20                 # Each grid cell = 20cm x 20cm
 DIST_THRESHOLD = 15              # cm, detect obstacle within 15cm
 ROBOT_SPEED_CM_PER_SEC = 20      # Adjust based on actual speed
 MOVE_TIME = CELL_SIZE_CM / ROBOT_SPEED_CM_PER_SEC
+MAX_RUNTIME_SECONDS = 180        # Maximum allowed time for robot to reach goal (3 minutes)
+MAX_REPLANS = 10                 # Maximum number of re-plans allowed
 
 # === Load Map ===
 grid = load_map("map.json")
@@ -47,43 +49,55 @@ def move_to(next_pos):
 
 def mark_obstacle_in_grid(pos):
     x, y = pos
-    grid[x][y] = 1
+    if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
+        grid[x][y] = 1
 
 try:
+    replan_count = 0
+    start_time = time.time()
+
     while path:
+        # Check runtime
+        elapsed_time = time.time() - start_time
+        if elapsed_time > MAX_RUNTIME_SECONDS:
+            print("Safety Timeout: Robot took too long. Stopping...")
+            break
+
         next_step = path.pop(0)
         print(f"Next: {next_step}")
 
         dist = distance()
-        distl=distanceL()
-        distr=distanceR()
-        
-        print(f"Sensor Distance: {dist:.2f} cm")
+        distl = distanceL()
+        distr = distanceR()
 
-        if dist < DIST_THRESHOLD or distr<DIST_THRESHOLD or distl<DIST_THRESHOLD:
-            
-            print("Obstacle ahead! Replanning...")
+        print(f"Sensor Distances: Front={dist:.2f}cm, Left={distl:.2f}cm, Right={distr:.2f}cm")
 
-            # Estimate obstacle cell
+        if dist < DIST_THRESHOLD or distl < DIST_THRESHOLD or distr < DIST_THRESHOLD:
+            print("Obstacle detected! Replanning...")
+
+            # Estimate obstacle location
             dx = next_step[0] - current_pos[0]
             dy = next_step[1] - current_pos[1]
             obs_pos = (current_pos[0] + dx, current_pos[1] + dy)
 
             mark_obstacle_in_grid(obs_pos)
 
-            # Re-plan
-            path = a_star(grid, current_pos, goal)
+            replan_count += 1
+            if replan_count > MAX_REPLANS:
+                print("Too many replans. Robot may be stuck. Stopping...")
+                break
 
+            path = a_star(grid, current_pos, goal)
             if not path:
-                print("No alternative path.")
+                print("No path available after re-planning. Exiting...")
                 break
         else:
             move_to(next_step)
 
-    print("Reached goal!")
+    print("Finished execution.")
 
 except KeyboardInterrupt:
-    print("Interrupted")
+    print("Interrupted by user.")
 
 finally:
     stop()
